@@ -2,3 +2,8 @@
 
 # Greenlight
 A JSON API for retrieving and managing information about movies. Based on the book [Let's Go Further!](https://lets-go-further.alexedwards.net) by Alex Edwards.
+
+## Start the application
+```bash
+make start
+```
