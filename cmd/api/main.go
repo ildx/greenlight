@@ -43,23 +43,19 @@ func main() {
 		logger: logger,
 	}
 
-	// servemux and routing
-	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/healthcheck", app.healthcheckHandler)
-
 	// declare http server
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      mux,
+		Handler:      app.routes(),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		ErrorLog:     slog.NewLogLogger(logger.Handler(), slog.LevelError),
 	}
 
-  // start server
-  logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
-  err := srv.ListenAndServe()
-  logger.Error(err.Error())
-  os.Exit(1)
+	// start server
+	logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
+	err := srv.ListenAndServe()
+	logger.Error(err.Error())
+	os.Exit(1)
 }
