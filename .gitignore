@@ -23,6 +23,7 @@ tls/
 
 # Local binary file
 bin/
+tmp/
 
 # Go workspace file
 go.work
