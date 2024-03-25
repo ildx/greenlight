@@ -18,6 +18,9 @@
 /vendor/
 /Godeps/
 
+# Secrets
+.env
+
 # TLS Certificates and keys
 tls/
 

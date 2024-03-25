@@ -1,12 +1,17 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 // global constant holding the version of the app
@@ -16,6 +21,9 @@ const version = "1.0.0"
 type config struct {
 	port int
 	env  string
+	db   struct {
+		dsn string
+	}
 }
 
 // application struct to hold the dependencies
@@ -28,14 +36,32 @@ type application struct {
 func main() {
 	// declare instance of config
 	var cfg config
+  
+	// init logger for writing to stdout
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
 	// read port and env from the command line
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
-	flag.Parse()
+	
+  // parse db dsn from env
+  err := godotenv.Load(".env")
+  if err != nil {
+    logger.Error(err.Error())
+    os.Exit(1)
+  }
+  flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("DB_DSN"), "PostgreSQL DSN")
+	
+  flag.Parse()
 
-	// init logger for writing to stdout
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	// connect to the database
+	db, err := openDB(cfg)
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+	defer db.Close()
+	logger.Info("database connection pool established")
 
 	// declare app instance
 	app := &application{
@@ -55,7 +81,30 @@ func main() {
 
 	// start server
 	logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
-	err := srv.ListenAndServe()
+
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
+}
+
+// openDB returns a sql.DB connection pool
+func openDB(cfg config) (*sql.DB, error) {
+	// create an empty connection pool
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	// create context with a 5-second timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// ping the database
+	err = db.PingContext(ctx)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }
