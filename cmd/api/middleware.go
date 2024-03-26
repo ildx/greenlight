@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
+	"sync"
+	"time"
 
 	"golang.org/x/time/rate"
 )
@@ -26,15 +29,70 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 }
 
 func (app *application) rateLimit(next http.Handler) http.Handler {
-	// avg 2 req/sec, max 4 req in a single "burst"
-	limiter := rate.NewLimiter(2, 4)
+	// client struct to hold the rate limiter and last seen time
+	type client struct {
+		limiter  *rate.Limiter
+		lastSeen time.Time
+	}
+
+	// define mutex and map to store client ips and their rate limits
+	var (
+		mu      sync.Mutex
+		clients = make(map[string]*client)
+	)
+
+  // launch go routine to clean up old entries from clients every minute
+  go func() {
+    for {
+      time.Sleep(time.Minute)
+
+      // lock mutex until the cleanup is done
+      mu.Lock()
+
+      // loop clients; if no activity in last 3 minutes, delete the entry
+      for ip, client := range clients {
+        if time.Since(client.lastSeen) > 3*time.Minute {
+          delete(clients, ip)
+        }
+      }
+
+      // done, unlock mutex
+      mu.Unlock()
+    }
+  }()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// check if the request is permitted
-		if !limiter.Allow() {
+		// extract client ip from request
+		ip, _, err := net.SplitHostPort(r.RemoteAddr)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		// lock to prevent concurrent access to the map
+		mu.Lock()
+
+		// check if ip is already in map. if not,
+		// init new rate limiter and add it with the ip to the map
+		if _, found := clients[ip]; !found {
+      clients[ip] = &client{limiter: rate.NewLimiter(2, 4)}
+		}
+
+    // update the last seen time for the client
+    clients[ip].lastSeen = time.Now()
+
+		// check if the rate limiter allows the request
+		if !clients[ip].limiter.Allow() {
+			mu.Unlock()
 			app.rateLimitExceededResponse(w, r)
 			return
 		}
+
+		// unlock the mutex.
+		// note that unlock is not deferred because we might need to wait
+		// until all handlers are done
+		mu.Unlock()
+
 		next.ServeHTTP(w, r)
 	})
 }
