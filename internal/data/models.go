@@ -16,11 +16,13 @@ var (
 // Models wrapper
 type Models struct {
 	Movies MovieModel
+	Users  UserModel
 }
 
 // returns a Models struct containing initialized model
 func NewModels(db *sql.DB) Models {
 	return Models{
 		Movies: MovieModel{DB: db},
+		Users:  UserModel{DB: db},
 	}
 }
