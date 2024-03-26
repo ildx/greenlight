@@ -28,6 +28,12 @@ func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, st
 	}
 }
 
+// handle edit conflicts
+func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
+	message := "unable to update the record due to an edit conflict, please try again"
+	app.errorResponse(w, r, http.StatusConflict, message)
+}
+
 // handle unexpected server problems
 func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.logError(r, err)
@@ -50,10 +56,10 @@ func (app *application) methodNotAllowedResponse(w http.ResponseWriter, r *http.
 
 // handle bad requests
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
-  app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+	app.errorResponse(w, r, http.StatusBadRequest, err.Error())
 }
 
 // handle validation failures
 func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]string) {
-  app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
+	app.errorResponse(w, r, http.StatusUnprocessableEntity, errors)
 }
