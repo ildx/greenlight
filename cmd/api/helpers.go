@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/ildx/greenlight/internal/validator"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -22,6 +25,39 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	}
 
 	return id, nil
+}
+
+// return query string value as string
+func (app *application) readString(qs url.Values, key string, defaultValue string) string {
+	// extract value from query string
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	return s
+}
+
+// split query string into a slice
+func (app *application) readCSV(qs url.Values, key string, defaultValue []string) []string {
+	csv := qs.Get(key)
+	if csv == "" {
+		return defaultValue
+	}
+	return strings.Split(csv, ",")
+}
+
+// return query string value as int
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	s := qs.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		v.AddError(key, "must be an integer value")
+		return defaultValue
+	}
+	return i
 }
 
 // envolope type for wrapping responses
@@ -83,12 +119,12 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		case errors.Is(err, io.EOF):
 			return errors.New("body must not be empty")
 
-    case strings.HasPrefix(err.Error(), "json: unknown field "):
-      fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
-      return fmt.Errorf("body contains unknown key %s", fieldName)
+		case strings.HasPrefix(err.Error(), "json: unknown field "):
+			fieldName := strings.TrimPrefix(err.Error(), "json: unknown field ")
+			return fmt.Errorf("body contains unknown key %s", fieldName)
 
-    case errors.As(err, &maxBytesError):
-      return fmt.Errorf("body must not be larger than %d bytes", maxBytesError.Limit)
+		case errors.As(err, &maxBytesError):
+			return fmt.Errorf("body must not be larger than %d bytes", maxBytesError.Limit)
 
 		case errors.As(err, &invalidUnmarshalError):
 			panic(err)
@@ -98,11 +134,11 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 		}
 	}
 
-  // don't allow additional data on request body
-  err = dec.Decode(&struct{}{})
-  if !errors.Is(err, io.EOF) {
-    return errors.New("body must only contain a single JSON value")
-  }
+	// don't allow additional data on request body
+	err = dec.Decode(&struct{}{})
+	if !errors.Is(err, io.EOF) {
+		return errors.New("body must only contain a single JSON value")
+	}
 
 	return nil
 }
