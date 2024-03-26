@@ -10,5 +10,5 @@ migrate_up:
 	migrate -source file://migrations -database $(DB_DSN) up
 
 migrate_down:
-	@echo "Rollback migrations..."
+	@echo "Rolling back migrations..."
 	migrate -source file://migrations -database $(DB_DSN) down
