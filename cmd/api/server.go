@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -21,6 +23,9 @@ func (app *application) serve() error {
 		ErrorLog:     slog.NewLogLogger(app.logger.Handler(), slog.LevelError),
 	}
 
+	// shutdown channel to receive errors returned by graceful shutdown
+	shutdownError := make(chan error)
+
 	go func() {
 		// quit channel which carries os.Signal values
 		quit := make(chan os.Signal, 1)
@@ -33,13 +38,29 @@ func (app *application) serve() error {
 
 		// log message to indicate signal received.
 		// String() is used to to get the signal name
-		app.logger.Info("caught signal", "signal", s.String())
+		app.logger.Info("shutting down server", "signal", s.String())
 
-		// Exit with status code 0 (success)
-		os.Exit(0)
+		// context with 30s timeout
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// shutdown server and send error to shutdownError channel
+		shutdownError <- srv.Shutdown(ctx)
 	}()
 
 	app.logger.Info("starting server", "addr", srv.Addr, "env", app.config.env)
 
-	return srv.ListenAndServe()
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <- shutdownError
+	if err != nil {
+		return err
+	}
+
+  app.logger.Info("stopped server", "addr", srv.Addr)
+
+  return nil
 }
