@@ -28,6 +28,6 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
-	// recovery must be first, so we handle rate limit panics also
-	return app.recoverPanic(app.rateLimit(app.authenticate(router)))
+	// recovery must be first, so we can handle all panics
+	return app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router))))
 }
