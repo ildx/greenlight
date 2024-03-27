@@ -11,14 +11,17 @@ import (
 	"github.com/ildx/greenlight/internal/validator"
 )
 
-const ScopeActivation = "activation"
+const (
+	ScopeActivation     = "activation"
+	ScopeAuthentication = "authentication"
+)
 
 type Token struct {
-	PlainText string
-	Hash      []byte
-	UserID    int64
-	Expiry    time.Time
-	Scope     string
+	Plaintext string    `json:"token"`
+	Hash      []byte    `json:"-"`
+	UserID    int64     `json:"-"`
+	Expiry    time.Time `json:"expiry"`
+	Scope     string    `json:"-"`
 }
 
 type TokenModel struct {
@@ -48,11 +51,11 @@ func generateToken(userID int64, tll time.Duration, scope string) (*Token, error
 
 	// encode the byte slice to a base-32-encoded string.
 	// maybe padded with '=' at the end, so omit it
-	token.PlainText = base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
+	token.Plaintext = base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(randomBytes)
 
 	// generate a SHA-256 hash of the plain text token.
 	// it returns an array, which we don't need, so convert it to a slice
-	hash := sha256.Sum256([]byte(token.PlainText))
+	hash := sha256.Sum256([]byte(token.Plaintext))
 	token.Hash = hash[:]
 
 	return token, nil
