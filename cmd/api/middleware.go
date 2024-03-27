@@ -160,20 +160,20 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 }
 
 func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
-  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    user := app.contextGetUser(r)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
 
-    if user.IsAnonymous() {
-      app.authenticationRequiredResponse(w, r)
-      return
-    }
+		if user.IsAnonymous() {
+			app.authenticationRequiredResponse(w, r)
+			return
+		}
 
-    next.ServeHTTP(w, r)
-  })
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (app *application) requireActivatedUser(next http.HandlerFunc) http.HandlerFunc {
-  fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	fn := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// get user from request context
 		user := app.contextGetUser(r)
 
@@ -187,6 +187,27 @@ func (app *application) requireActivatedUser(next http.HandlerFunc) http.Handler
 		next.ServeHTTP(w, r)
 	})
 
-  // wrap fn with requireAuthenticatedUser middleware
-  return app.requireAuthenticatedUser(fn)
+	// wrap fn with requireAuthenticatedUser middleware
+	return app.requireAuthenticatedUser(fn)
+}
+
+func (app *application) requirePermission(code string, next http.HandlerFunc) http.HandlerFunc {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		permissions, err := app.models.Permissions.GetAllForUsers(user.ID)
+		if err != nil {
+			app.serverErrorResponse(w, r, err)
+			return
+		}
+
+		if !permissions.Include(code) {
+			app.notPermittedResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+
+	return app.requireActivatedUser(fn)
 }
