@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"expvar"
 	"flag"
+	"fmt"
 	"log/slog"
 	"os"
 	"runtime"
@@ -15,13 +16,14 @@ import (
 
 	"github.com/ildx/greenlight/internal/data"
 	"github.com/ildx/greenlight/internal/mailer"
+	"github.com/ildx/greenlight/internal/vcs"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 // global constant holding the version of the app
-const version = "1.0.0"
+var version = vcs.Version()
 
 // config struct to hold the configuration of the app
 type config struct {
@@ -105,7 +107,14 @@ func main() {
 		return nil
 	})
 
+	displayVersion := flag.Bool("version", false, "Display version and exit")
+
 	flag.Parse()
+
+	if *displayVersion {
+		fmt.Printf("Version:\t%s\n", version)
+		os.Exit(0)
+	}
 
 	// connect to the database
 	db, err := openDB(cfg)
