@@ -1,0 +1,13 @@
+# contact email for if there's a problem with TLS certificate
+{
+  email you@example.com
+}
+
+# replace this with an actual ip or your domain name
+# http://127.0.0.1 {
+
+# ssl, replace with your domain, no http:// prefix
+replace-this.with-your-domain.com {
+  respond /debug/* "Not Permitted" 403
+  reverse_proxy localhost:4000
+}
