@@ -145,12 +145,12 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 
 // arbitrary func helper to recover panics
 func (app *application) background(fn func()) {
-  // increment waitgroup counter
-  app.wg.Add(1)
+	// increment waitgroup counter
+	app.wg.Add(1)
 
 	go func() {
-    // defer waitgroup decrement before returning
-    defer app.wg.Done()
+		// defer waitgroup decrement before returning
+		defer app.wg.Done()
 
 		// recover panic
 		defer func() {

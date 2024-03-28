@@ -47,16 +47,16 @@ func PermittedValue[T comparable](value T, permittedValues ...T) bool {
 
 // Matches return true if a string value matches a specific regex pattern
 func Matches(value string, rx *regexp.Regexp) bool {
-  return rx.MatchString(value)
+	return rx.MatchString(value)
 }
 
 // Generic function to check if all values in a slice are unique
 func Unique[T comparable](values []T) bool {
-  uniqueValues := make(map[T]bool)
+	uniqueValues := make(map[T]bool)
 
-  for _, value := range values {
-    uniqueValues[value] = true
-  }
+	for _, value := range values {
+		uniqueValues[value] = true
+	}
 
-  return len(values) == len(uniqueValues)
+	return len(values) == len(uniqueValues)
 }

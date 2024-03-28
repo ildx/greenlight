@@ -66,8 +66,8 @@ func main() {
 
 	// init logger for writing to stdout
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	
-  // parse db dsn from env
+
+	// parse db dsn from env
 	err := godotenv.Load(".envrc")
 	if err != nil {
 		logger.Error(err.Error())
@@ -124,15 +124,15 @@ func main() {
 		return runtime.NumGoroutine()
 	}))
 
-  // publish the database connection pool stats
-  expvar.Publish("database", expvar.Func(func() any {
-    return db.Stats()
-  }))
+	// publish the database connection pool stats
+	expvar.Publish("database", expvar.Func(func() any {
+		return db.Stats()
+	}))
 
-  // publish the current Unix timestamp
-  expvar.Publish("timestamp", expvar.Func(func() any {
-    return time.Now().Unix()
-  }))
+	// publish the current Unix timestamp
+	expvar.Publish("timestamp", expvar.Func(func() any {
+		return time.Now().Unix()
+	}))
 
 	// declare app instance
 	app := &application{
