@@ -1,4 +1,4 @@
-include .env
+include .envrc
 
 ## help: print this help message
 .PHONY: help
@@ -14,7 +14,7 @@ confirm:
 .PHONY: run/api
 run/api:
 	@echo "Starting the server..."
-	go run ./cmd/api
+	go run ./cmd/api -db-dsn=$(DB_DSN)
 
 ## db/connect: connect to database using psql
 .PHONY: db/connect
@@ -25,8 +25,8 @@ db/connect:
 ## migrate/create name=$1: create a new database migration
 .PHONY: migrate/create
 migrate/create:
-	@echo "Creating ${name} migration..."
-	migrate create -seq -ext=.sql -dir=./migration ${name}
+	@echo "Creating $(name) migration..."
+	migrate create -seq -ext=.sql -dir=./migration $(name)
 
 ## migrate/up: apply all database migrations
 .PHONY: migrate/up

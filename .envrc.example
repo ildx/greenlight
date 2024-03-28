@@ -1,0 +1,5 @@
+export DB_DSN=
+export SMTP_HOST=
+export SMTP_PORT=
+export SMTP_USERNAME=
+export SMTP_PASSWORD=

@@ -20,6 +20,7 @@
 
 # Secrets
 .env
+.envrc
 
 # TLS Certificates and keys
 tls/

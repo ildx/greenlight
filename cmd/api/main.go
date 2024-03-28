@@ -66,18 +66,19 @@ func main() {
 
 	// init logger for writing to stdout
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	
+  // parse db dsn from env
+	err := godotenv.Load(".envrc")
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
 
 	// read port and env from the command line
 	flag.IntVar(&cfg.port, "port", 4000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
-	// parse db dsn from env
-	err := godotenv.Load(".env")
-	if err != nil {
-		logger.Error(err.Error())
-		os.Exit(1)
-	}
-	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("DB_DSN"), "PostgreSQL DSN")
+	flag.StringVar(&cfg.db.dsn, "db-dsn", "", "PostgreSQL DSN")
 
 	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
 	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
